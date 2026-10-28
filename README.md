@@ -56,9 +56,9 @@ python3 ablit/build_adapter.py --artifact pt \
 #      vllm serve deepseek-ai/DeepSeek-V4.1-Flash-1017 \
 #        --enable-lora --lora-modules ablit=./ablit-adapter \
 #        --lora-target-modules wo_b
-#    SGLang: start with --enable-lora and the adapter directory under the served
-#    LoRA name; how the name is exposed depends on your launcher.
-#    A request selects it with "model": "ablit".
+#    SGLang: start with --enable-lora, then select the adapter per request as
+#    "model": "<base>:<adapter>" -- the colon form. A bare adapter name can be
+#    advertised by /v1/models and still serve the base model; check with step 4.
 
 # 4. Prove the adapter is actually applied, before scoring anything.
 python3 ablit/compare_adapters.py --base-url http://localhost:8000 \
@@ -169,7 +169,10 @@ Any of these failures hides behind a short prompt. Run all three before believin
 adapter is installed:
 
 1. **It differs from base.** Same prompt, base and adapter, same seed: the answers must
-   differ. `ablit/compare_adapters.py`.
+   differ. `ablit/compare_adapters.py`. Check this by comparing output, not by checking a
+   status code — an unknown or mistyped model name is not always an error, and some
+   servers fall back to serving the base model instead of rejecting the request. A typo
+   then looks exactly like "the adapter did nothing".
 2. **A long prompt through an active adapter does not fault.** Well past the replay
    window — 4k tokens, not 128. This is the gate that catches the SGLang crash.
 3. **A mixed soak survives.** Concurrent long and short prompts, base and adapter in the
